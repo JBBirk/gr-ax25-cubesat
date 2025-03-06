@@ -1,0 +1,21 @@
+id: hwu_ax25_extract_frame_v2
+label: ax25_extract_frame_v2
+category: '[hwu]'
+
+templates:
+  imports: from gnuradio import hwu
+  make: hwu.ax25_extract_frame_v2()
+
+inputs:
+- label: Byte in
+  domain: stream
+  dtype: byte
+
+outputs:
+- label: Frame out
+  domain: message
+
+#  'file_format' specifies the version of the GRC yml format used in the file
+#  and should usually not be changed.
+file_format: 1
+

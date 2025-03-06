@@ -1,0 +1,23 @@
+Start testing: Dec 12 11:17 GMT
+----------------------------------------------------------
+1/1 Testing: qa_ax25_extract_frame
+1/1 Test: qa_ax25_extract_frame
+Command: "/usr/bin/sh" "qa_ax25_extract_frame_test.sh"
+Directory: /home/jbb2002/gr-hwu/build/python/hwu
+"qa_ax25_extract_frame" start time: Dec 12 11:17 GMT
+Output:
+----------------------------------------------------------
+....
+----------------------------------------------------------------------
+Ran 4 tests in 0.136s
+
+OK
+<end of output>
+Test time =   0.47 sec
+----------------------------------------------------------
+Test Passed.
+"qa_ax25_extract_frame" end time: Dec 12 11:17 GMT
+"qa_ax25_extract_frame" time elapsed: 00:00:00
+----------------------------------------------------------
+
+End testing: Dec 12 11:17 GMT

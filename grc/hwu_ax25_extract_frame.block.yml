@@ -1,0 +1,21 @@
+id: hwu_ax25_extract_frame
+label: ax25_extract_frame
+category: '[hwu]'
+flags: [ python ]
+
+templates:
+  imports: import hwu
+  make: hwu.ax25_extract_frame()
+
+inputs:
+- label: Byte in
+  domain: stream
+  dtype: byte
+
+outputs:
+- label: Frame out
+  domain: message
+
+#  'file_format' specifies the version of the GRC yml format used in the file
+#  and should usually not be changed.
+file_format: 1

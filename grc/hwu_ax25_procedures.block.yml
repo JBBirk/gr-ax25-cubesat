@@ -1,0 +1,84 @@
+id: hwu_ax25_procedures
+label: ax25_procedures
+category: '[hwu]'
+flags: [ python ]
+
+templates:
+  imports: import hwu
+  make: hwu.ax25_procedures(${src_addr}, ${src_ssid}, ${dest_addr}, ${dest_ssid}, ${full_duplex}, ${rej}, ${modulo}, ${information_field_length}, ${receive_window_k}, ${ack_timer}, ${retries})
+
+parameters:
+- id: src_addr
+  label: Source Address
+  dtype: string
+  default: "HWUGND"
+- id: src_ssid
+  label: Source SSID
+  dtype: int
+  default: 1
+- id: dest_addr
+  label: Remote Address
+  dtype: string
+  default: HWUSAT
+- id: dest_ssid
+  label: Remote SSID
+  dtype: int
+  default: 1
+- id: full_duplex
+  label: Full Duplex enable
+  dtype: bool
+  default: True
+- id: rej
+  label: Rejection Mode (REJ or SREJ)
+  dtype: string
+  default: "REJ"
+- id: modulo
+  label: Modulo mode (8 or 128)
+  dtype: int
+  default: 8
+- id: information_field_length
+  label: Information field length
+  dtype: int
+  default: 2048
+- id: receive_window_k
+  label: Receive Window Size
+  dtype: int
+  default: 8
+- id: ack_timer
+  label: Acknowledge Window (seconds)
+  dtype: int
+  default: 3
+- id: retries
+  label: Retries
+  dtype: int
+  default: 10
+
+#  Make one 'inputs' list entry per input and one 'outputs' list entry per output.
+#  Keys include:
+#      * label (an identifier for the GUI)
+#      * domain (optional - stream or message. Default is stream)
+#      * dtype (e.g. int, float, complex, byte, short, xxx_vector, ...)
+#      * vlen (optional - data stream vector length. Default is 1)
+#      * optional (optional - set to 1 for optional inputs. Default is 0)
+inputs:
+- label: Payload in
+  domain: message
+- label: Frame in
+  domain: message
+
+outputs:
+- label: Payload out
+  domain: message
+- label: Frame out
+  domain: message
+
+# outputs:
+# - label: ...
+#   domain: ...
+#   dtype: ...
+#   vlen: ...
+#   optional: ...
+
+#  'file_format' specifies the version of the GRC yml format used in the file
+#  and should usually not be changed.
+file_format: 1
