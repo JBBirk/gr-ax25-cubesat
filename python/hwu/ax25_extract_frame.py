@@ -148,7 +148,7 @@ class ax25_extract_frame(gr.sync_block):
         self.bit_buffer_input = []
         self.bit_buffer_output = []
         self.frame_buffer = []
-        # self.active_frame = False
+        self.active_frame = False
         self.ones = 0
     
 
