@@ -1,0 +1,31 @@
+id: hwu_physical_header_barker_code
+label: Physical Header Barker Code
+category: '[hwu]'
+
+templates:
+  imports: from gnuradio import hwu
+  make: hwu.physical_header_barker_code(${barker_len}, ${add_tail})
+
+parameters:
+- id: barker_len
+  label: Barker Length (2,3,4,5,7,11 or 13)
+  dtype: int
+  default: 11
+
+- id: add_tail
+  label: Add Tail sequence
+  dtype: bool
+  default: False
+
+inputs:
+- label: Frame in
+  domain: message
+
+outputs:
+- label: Frame out
+  domain: message
+
+
+#  'file_format' specifies the version of the GRC yml format used in the file
+#  and should usually not be changed.
+file_format: 1

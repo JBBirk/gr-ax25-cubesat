@@ -3,7 +3,7 @@ label: nrzi_decode_packed
 category: '[hwu]'
 
 templates:
-  imports: import hwu
+  imports: from gnuradio import hwu
   make: hwu.nrzi_decode_packed()
 
 

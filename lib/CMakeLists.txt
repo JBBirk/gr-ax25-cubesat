@@ -10,8 +10,8 @@
 # Setup library
 ########################################################################
 include(GrPlatform) #define LIB_SUFFIX
-
-list(APPEND hwu_sources)
+list(APPEND hwu_sources
+    physical_header_barker_tagged_stream_impl.cc )
 
 set(hwu_sources
     "${hwu_sources}"

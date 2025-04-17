@@ -1,3 +1,0 @@
-qa_ax25_procedures 0 0
-qa_ax25_extract_frame 2 0.234524
----

@@ -29,6 +29,7 @@ import logging
 from .ax25_framer import Framer
 from .ax25_constants import PID
 from .ax25_connectors import Uplinker, Downlinker
+from .ax25_timers import Timers
 
 
 
@@ -58,6 +59,8 @@ class Transceiver:
                 receive_window_k=7, 
                 ack_timer=3, 
                 retries=10,
+                timer_t1_seconds=3,
+                timer_t3_seconds=10,
                 gr_block=None):
         
         self.src_addr = src_addr
@@ -74,6 +77,10 @@ class Transceiver:
         self.ack_timer = ack_timer
         self.retries = retries
         self.pid = bs.Bits(hex=PID)
+        self.timer_reset_t1 = threading.Event()
+        self.timer_cancel_t1 = threading.Event()
+        self.timer_reset_t3 = threading.Event()
+        self.timer_cancel_t3 = threading.Event()
         # self.tcp_isServer = tcp_isServer
 
         """ Setup internal links to other classes"""
@@ -81,6 +88,8 @@ class Transceiver:
         self.uplinker = Uplinker(self, self.framer)
         self.downlinker = Downlinker(self, self.framer)
         self.gr_block = gr_block
+
+        self.timers = Timers(self, self.timer_reset_t1, self.timer_cancel_t1, self.timer_reset_t3, self.timer_cancel_t3, timer_t1_seconds, timer_t3_seconds)
 
         """ Setup helpers"""
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

@@ -9,4 +9,5 @@
 ########################################################################
 # Install public header files
 ########################################################################
-install(FILES api.h DESTINATION include/gnuradio/hwu)
+install(FILES api.h
+    physical_header_barker_tagged_stream.h DESTINATION include/gnuradio/hwu)

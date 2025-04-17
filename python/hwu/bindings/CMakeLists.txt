@@ -23,8 +23,8 @@ include(GrPybind)
 ########################################################################
 # Python Bindings
 ########################################################################
-
-list(APPEND hwu_python_files python_bindings.cc)
+list(APPEND hwu_python_files
+    physical_header_barker_tagged_stream_python.cc python_bindings.cc)
 
 gr_pybind_make_oot(hwu ../../.. gr::hwu "${hwu_python_files}")
 

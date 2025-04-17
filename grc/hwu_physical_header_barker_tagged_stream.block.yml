@@ -1,0 +1,41 @@
+id: hwu_physical_header_barker_tagged_stream
+label: physical_header_barker_tagged_stream
+category: '[hwu]'
+
+templates:
+  imports: from gnuradio import hwu
+  make: hwu.physical_header_barker_tagged_stream(${barker_len}, ${add_tail}, ${lengthtagname})
+
+#  Make one 'parameters' list entry for every parameter you want settable from the GUI.
+#     Keys include:
+#     * id (makes the value accessible as keyname, e.g. in the make entry)
+#     * label (label shown in the GUI)
+#     * dtype (e.g. int, float, complex, byte, short, xxx_vector, ...)
+#     * default
+parameters:
+- id: barker_len
+  label: Barker Length (2,3,4,5,7,11 or 13)
+  dtype: int
+  default: 11
+
+- id: add_tail
+  label: Add Tail sequence
+  dtype: bool
+  default: False
+
+- id: lengthtagname
+  label: Length Tag Name
+  dtype: string
+  default: packet_len
+
+inputs:
+- label: In
+  domain: stream
+  dtype: byte
+
+outputs:
+- label: Out
+  domain: stream
+  dtype: byte
+
+file_format: 1

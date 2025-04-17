@@ -4,7 +4,7 @@ category: '[hwu]'
 flags: [ python ]
 
 templates:
-  imports: import hwu
+  imports: from gnuradio import hwu
   make: hwu.ax25_extract_frame()
 
 inputs:

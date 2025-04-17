@@ -4,7 +4,7 @@ category: '[hwu]'
 flags: [ python ]
 
 templates:
-  imports: import hwu
+  imports: from gnuradio import hwu
   make: hwu.ax25_procedures(${src_addr}, ${src_ssid}, ${dest_addr}, ${dest_ssid}, ${full_duplex}, ${rej}, ${modulo}, ${information_field_length}, ${receive_window_k}, ${ack_timer}, ${retries})
 
 parameters:

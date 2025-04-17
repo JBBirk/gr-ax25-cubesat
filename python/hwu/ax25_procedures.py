@@ -75,15 +75,20 @@ class ax25_procedures(gr.basic_block):
 
     def handle_payload_in(self, msg_pmt):
         # print("Payload received: ", msg_pmt)
-        with self.transceiver.lock:
-            self.transceiver.framequeue.append(
-                {"Dest":[self.transceiver.dest_addr,
-                         self.transceiver.dest_ssid],
-                         "Type":'I',
-                         "Poll":False,
-                         "Payload": bytes(pmt.u8vector_elements(pmt.cdr(msg_pmt))),
-                         "Com":'COM'} #TODO: Looak at Payload handling, this might be a vector
-                )
+        try:
+            with self.transceiver.lock:
+                self.transceiver.framequeue.append(
+                    {"Dest":[self.transceiver.dest_addr,
+                            self.transceiver.dest_ssid],
+                            "Type":'I',
+                            "Poll":False,
+                            "Payload": bytes(pmt.u8vector_elements(pmt.cdr(msg_pmt))),
+                            "Com":'COM'} #TODO: Looak at Payload handling, this might be a vector
+                    )
+        except ValueError as e: 
+            self.transceiver.logger.debug(e)
+        except Exception as e:
+            self.transceiver.logger.debug(e)
 
     def handle_frame_in(self, msg_pmt):
         # print("Frame received: ",pmt.u8vector_elements(pmt.cdr(msg_pmt)))
