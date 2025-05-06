@@ -18,7 +18,9 @@ namespace gr {
     class physical_header_barker_tagged_stream_impl : public physical_header_barker_tagged_stream
     {
      private:
-     const std::unordered_map<int, const std::vector<uint8_t>> BARKER_CODES={
+     bool add_tail;
+     std::vector<uint8_t> barker;
+     const std::unordered_map<int, std::vector<uint8_t>> BARKER_CODES={
         {2, {2}},      //[1,0]
         {3, {6}},      //[1,1,0]
         {4, {13}},     //[1,1,0,1]
@@ -27,8 +29,7 @@ namespace gr {
         {11, {7,18}},  //[1,1,1,0,0,0,1,0,0,1,0]
         {13, {31,53}}  //[1,1,1,1,1,0,0,1,1,0,1,0,1]
         };
-        bool add_tail;
-        std::vector<uint8_t> barker;
+
       // Nothing to declare in this block.
 
      protected:

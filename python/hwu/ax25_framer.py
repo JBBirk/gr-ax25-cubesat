@@ -255,6 +255,13 @@ class Framer:
         except:
             self.transceiver.logger.warning("Unpacking frame failed")
             return {"Type": 'ERROR', "Poll": False, "Pid-Data": None, "Nr": None, "Ns":None, "Com": None}
+        try:
+            if dest_addr.tobytes().decode() != self.transceiver.src_addr: #or dest_ssid.uint != transceiver.src_ssid: Moved to before checksum, to filter out 
+                self.transceiver.logger.debug("Frame Addresses some other receiver")
+                return {"Type": 'ERROR', "Poll": False, "Pid-Data": None, "Nr": None, "Ns":None, "Com": None}
+        except UnicodeDecodeError: #This means its idle data from the radio that can't be decoded
+            return {"Type": 'ERROR', "Poll": False, "Pid-Data": None, "Nr": None, "Ns":None, "Com": None}
+
 
         # TODO comment back in again, just for testing
         fcs = self.calc_checksum(dest_addr.bytes + dest_ssid.bytes + src_addr.bytes + src_ssid.bytes + c_field.bytes + pid_and_info.bytes)
@@ -265,9 +272,7 @@ class Framer:
             self.transceiver.logger.debug(f"Sent CRC: {fcs_field.uint}, calculated: {fcs}")
             return {"Type": 'ERROR', "Poll": False, "Pid-Data": None, "Nr": None, "Ns":None, "Com": None}
         
-        if dest_addr.tobytes().decode() != self.transceiver.src_addr: #or dest_ssid.uint != transceiver.src_ssid:
-            self.transceiver.logger.debug("Frame Addresses some other receiver")
-            return {"Type": 'ERROR', "Poll": False, "Pid-Data": None, "Nr": None, "Ns":None, "Com": None}
+
         
         com = 'COM' if dest_ssid[0] == 1 and src_ssid[0] == 0 else 'RES'
         with self.transceiver.lock:

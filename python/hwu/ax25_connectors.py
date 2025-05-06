@@ -62,7 +62,7 @@ class Uplinker:
                 
                 # Check whether receive window would be exceeded 
                 if request["Type"] == 'I' and self.transceiver.send_state == (self.transceiver.ack_state + self.transceiver.receive_window_k)%self.transceiver.modulo: #TODO Check if this interferes with recovery by blocking frames fomr sending
-                    self.transceiver.logger.debug(f"Remote receive window full, waiting for clear. Acked: {self.transceiver.ack_state}, Sent: {self.transceiver.send_state-1}. Framequeue at {len(self.transceiver.framequeue)}")
+                    self.transceiver.logger.debug(f"Remote receive window full, waiting for clear. Acked: {self.transceiver.ack_state}, Sent: {self.transceiver.send_state}. Framequeue at {len(self.transceiver.framequeue)}")
                     # print("Receive window overflow")
                     self.transceiver.lock.release()
                     time.sleep(0.05)
@@ -155,13 +155,14 @@ class Downlinker:
                 data = self.framer.deframe(raw_frame)
                 self.transceiver.logger.debug(f"Raw Frame received: {raw_frame.hex}, Decoded Frame: {data}")
             except TypeError:
-                self.transceiver.logger.debug("Something went wrong!")
+                self.transceiver.logger.debug("Something went wrong while deframing!")
                 continue
             
             # self.transceiver.logger.debug(f"Data Frame received: {data}")
             if data['Type'] == 'ERROR':
                 # print("Error Received")
-                self.transceiver.logger.debug("Internal Error occured, see last log entry")
+                self.transceiver.logger.warning("=========== Internal Error occured, see last log entry ===========")
+                self.transceiver.logger.warning("")
                 # time.sleep(0.5)
                 continue
 

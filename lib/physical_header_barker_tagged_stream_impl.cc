@@ -32,7 +32,7 @@ namespace gr {
               gr::io_signature::make(1 /* min outputs */, 1 /*max outputs */, sizeof(output_type)), lengthtagname),
               add_tail(add_tail)
     {
-      std::vector<uint8_t> barker = BARKER_CODES.at(barker_len);
+      barker = BARKER_CODES.at(barker_len);
       set_tag_propagation_policy(TPP_DONT);
     }
 

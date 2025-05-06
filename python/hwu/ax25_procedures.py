@@ -60,7 +60,7 @@ class ax25_procedures(gr.basic_block):
                                        receive_window_k,
                                        ack_timer,
                                        retries,
-                                       self)
+                                       gr_block=self)
         
     
         self.message_port_register_in(pmt.intern('Payload in'))
@@ -92,5 +92,10 @@ class ax25_procedures(gr.basic_block):
 
     def handle_frame_in(self, msg_pmt):
         # print("Frame received: ",pmt.u8vector_elements(pmt.cdr(msg_pmt)))
-        with self.transceiver.lock:
-            self.transceiver.frame_input_queue.append(msg_pmt)
+        try:
+            with self.transceiver.lock:
+                self.transceiver.frame_input_queue.append(msg_pmt)
+        except ValueError as e: 
+            self.transceiver.logger.debug(e)
+        except Exception as e:
+            self.transceiver.logger.debug(e)

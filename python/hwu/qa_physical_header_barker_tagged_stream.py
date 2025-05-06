@@ -33,10 +33,30 @@ class qa_physical_header_barker_tagged_stream(gr_unittest.TestCase):
 
         # define blocks
         data_in = (1,2,3)
-        expected_result = (7,18,1,2,3)
+        expected_result = [7,18,1,2,3]
         src=blocks.vector_source_b(data_in, False, 1, [])
         to_tagged = blocks.stream_to_tagged_stream(gr.sizeof_char, 1, 3, "tx_packet_len")
         add_header=physical_header_barker_tagged_stream(11, False, "tx_packet_len")
+        sink=blocks.vector_sink_b(1,1024)
+
+        # set up connections
+        self.tb.connect(src, to_tagged, add_header, sink)
+
+        # set up fg
+        self.tb.run()
+
+        # check data
+        results = sink.data()
+        self.assertEqual(results, expected_result)
+
+    def test_002_Physical_header_barker_tagged_stream(self):
+
+        # define blocks
+        data_in = (1,2,3)
+        expected_result = [7,18,1,2,3,7,18]
+        src=blocks.vector_source_b(data_in, False, 1, [])
+        to_tagged = blocks.stream_to_tagged_stream(gr.sizeof_char, 1, 3, "tx_packet_len")
+        add_header=physical_header_barker_tagged_stream(11, True, "tx_packet_len")
         sink=blocks.vector_sink_b(1,1024)
 
         # set up connections
