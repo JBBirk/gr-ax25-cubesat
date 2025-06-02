@@ -1,0 +1,68 @@
+id: hwu_ax25_testing_input_only
+label: ax25_testing_input_only
+category: '[hwu]'
+
+templates:
+  imports: from gnuradio import hwu
+  make: hwu.ax25_testing_input_only(${src_addr}, ${src_ssid}, ${dest_addr}, ${dest_ssid}, ${full_duplex}, ${rej}, ${modulo}, ${information_field_length}, ${receive_window_k}, ${ack_timer}, ${retries})
+
+#  Make one 'parameters' list entry for every parameter you want settable from the GUI.
+#     Keys include:
+#     * id (makes the value accessible as keyname, e.g. in the make entry)
+#     * label (label shown in the GUI)
+#     * dtype (e.g. int, float, complex, byte, short, xxx_vector, ...)
+#     * default
+parameters:
+- id: src_addr
+  label: Source Address
+  dtype: string
+  default: "HWUGND"
+- id: src_ssid
+  label: Source SSID
+  dtype: int
+  default: 1
+- id: dest_addr
+  label: Remote Address
+  dtype: string
+  default: HWUSAT
+- id: dest_ssid
+  label: Remote SSID
+  dtype: int
+  default: 1
+- id: full_duplex
+  label: Full Duplex enable
+  dtype: bool
+  default: True
+- id: rej
+  label: Rejection Mode (REJ or SREJ)
+  dtype: string
+  default: "REJ"
+- id: modulo
+  label: Modulo mode (8 or 128)
+  dtype: int
+  default: 8
+- id: information_field_length
+  label: Information field length
+  dtype: int
+  default: 2048
+- id: receive_window_k
+  label: Receive Window Size
+  dtype: int
+  default: 8
+- id: ack_timer
+  label: Acknowledge Window (seconds)
+  dtype: int
+  default: 3
+- id: retries
+  label: Retries
+  dtype: int
+  default: 10
+
+inputs:
+- label: Payload in
+  domain: message
+
+outputs:
+- label: Frame out
+  domain: message
+file_format: 1

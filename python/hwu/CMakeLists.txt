@@ -33,7 +33,8 @@ gr_python_install(FILES __init__.py
     # usrp_burst_tagger.py
     # usrp_burst_tx.py
     ax25_extract_frame_v2.py
-    physical_header_barker_code.py DESTINATION ${GR_PYTHON_DIR}/gnuradio/hwu)
+    physical_header_barker_code.py
+    ax25_testing_input_only.py DESTINATION ${GR_PYTHON_DIR}/gnuradio/hwu)
 
 ########################################################################
 # Handle the unit tests
@@ -53,3 +54,4 @@ GR_ADD_TEST(qa_ax25_extract_frame ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DI
 # GR_ADD_TEST(qa_nrzi_encode_packed ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/qa_nrzi_encode_packed.py)
 # GR_ADD_TEST(qa_nrzi_decode_packed ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/qa_nrzi_decode_packed.py)
 GR_ADD_TEST(qa_physical_header_barker_tagged_stream ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/qa_physical_header_barker_tagged_stream.py)
+GR_ADD_TEST(qa_ax25_testing_input_only ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/qa_ax25_testing_input_only.py)

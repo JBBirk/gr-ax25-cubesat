@@ -15,4 +15,5 @@ install(FILES
     hwu_usrp_burst_tx.block.yml
     hwu_ax25_extract_frame_v2.block.yml
     hwu_physical_header_barker_code.block.yml
-    hwu_physical_header_barker_tagged_stream.block.yml DESTINATION share/gnuradio/grc/blocks)
+    hwu_physical_header_barker_tagged_stream.block.yml
+    hwu_ax25_testing_input_only.block.yml DESTINATION share/gnuradio/grc/blocks)

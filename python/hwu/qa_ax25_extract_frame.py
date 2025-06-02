@@ -166,7 +166,6 @@ class qa_ax25_extract_frame(gr_unittest.TestCase):
             src = blocks.vector_source_b(inputframe, repeat=False)
             ax25_extractor = frame_extractor()
             sink = blocks.message_debug()
-
             self.tb.connect(src, ax25_extractor)
             self.tb.msg_connect(ax25_extractor, 'Frame out', sink, "store")
 

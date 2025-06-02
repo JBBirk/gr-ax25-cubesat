@@ -24,6 +24,7 @@
 from concurrent.futures import thread
 import bitstring as bs
 import crc
+import time
 # from .ax25_transceiver import Transceiver
 from .ax25_constants import *
 
@@ -46,7 +47,7 @@ class Framer:
     
     def frame(self, frametype:str, src_addr:str, src_ssid:int , dest_addr:str, dest_ssid:int, pid:bs.Bits, payload:bytes, command_response:str, modulo=8, poll_final=False):
 
-
+        # start_time = time.time()
         """ Turn source address to bits """
         local_src = bs.BitArray()
         while(len(src_addr) < 6):
@@ -75,6 +76,7 @@ class Framer:
         if command_response == 'RES':
             local_dest += bs.Bits(bin='0b011', length=3) + bs.Bits(int=dest_ssid, length=4) + bs.Bits(bin='0b0', length=1)
 
+        # self.transceiver.logger.debug(f"Preparation took: {round((time.time() - start_time)*1000)} ms")
 
         """ Call appropriate framing subfunction """
 
@@ -82,13 +84,10 @@ class Framer:
 
             return self.__build_I_frame(local_src, local_dest, pid, payload, poll_final)
             
-        """ START HERE, FRAMETYPES MUST BE MORE IN DETAIL!!!!"""
-        # if frametype == 'S':
         if frametype in S_FRAMES:
 
             return self.__build_S_frame(local_src, local_dest, frametype, poll_final)
                 
-        # if frametype == 'U':
         if frametype in U_FRAMES:
             
             return self.__build_U_frame(local_src, local_dest, frametype, payload, poll_final)      
@@ -100,19 +99,23 @@ class Framer:
 
     def __build_I_frame(self, src:bs.Bits, dest:bs.Bits, pid:bs.Bits, payload:bytes, poll_final:bool=False):
 
+        start_time = time.time()
 
         if self.transceiver.modulo == 8:
             """ Peprare control field """
-            with self.transceiver.lock:
-                c_field = bs.BitArray(uint=self.transceiver.receive_state, length=3) + bs.BitArray(bool=poll_final) + bs.BitArray(uint=self.transceiver.send_state, length=3) + bs.BitArray(int=0, length=1)
+            # with self.transceiver.lock:
+            lock_time = time.time() - start_time
+                # c_field = bs.BitArray(uint=self.transceiver.receive_state, length=3) + bs.BitArray(bool=poll_final) + bs.BitArray(uint=self.transceiver.send_state, length=3) + bs.BitArray(int=0, length=1)
+            c_field = bs.BitArray(uint=self.transceiver.get_state_variable("vr"), length=3) + bs.BitArray(bool=poll_final) + bs.BitArray(uint=self.transceiver.get_state_variable("vs"), length=3) + bs.BitArray(int=0, length=1)
             
-
+            c_field_time = time.time() - start_time - lock_time
             """ Turn payload into bits and perform crc calculation"""
 
             
             info = bs.BitArray(bytes=payload)
             fcs = bs.BitArray(uint=self.calc_checksum(dest.bytes + src.bytes + c_field.bytes + pid.bytes + info.bytes), length=16)
-            
+            checksum_time = time.time() - start_time - c_field_time - lock_time
+
             """ Form Frame """
             bitframe = bs.BitArray()
             bitframe = self.flag.tobitarray() #Doesn't need mirror for LSB, because it symmetrical
@@ -124,19 +127,42 @@ class Framer:
             bitframe += fcs
             # Change/Add things here for bigger payloads (e.g. files), so the flag isn't sent twice
             bitframe += self.flag.bytes
+            
+            forming_time = time.time() - start_time - c_field_time - checksum_time - lock_time
 
-            self.transceiver.logger.debug(f"Frame in original bit order: {bitframe.hex}")
+            # self.transceiver.logger.debug(f"Frame in original bit order: {bitframe.hex}")
             """ Mirror bitorder per byte to get LSB first (when reading from left to right) """
             for position in range(8, len(bitframe)-24, 8): # Start after flag and stop before fcs field
                 currentbyte = bitframe[position:position+8]
                 bitframe[position:position+8] = currentbyte[::-1]
 
+            lsb_time = time.time()- start_time - c_field_time - checksum_time - forming_time - lock_time
+
             # Perform bitstuffing 
             bitframe.replace('0b11111', '0b111110', 8, -8)
+
+            current_send_state = self.transceiver.get_state_variable("vs")
+
             with self.transceiver.lock:
+                lock_time_stuffing = time.time() - start_time - c_field_time - checksum_time - forming_time - lsb_time - lock_time
                 # self.transceiver.logger.debug("Receiver send state: %d", self.transceiver.send_state)
-                self.transceiver.frame_backlog.insert(self.transceiver.send_state, {"Dest":[self.transceiver.dest_addr, self.transceiver.dest_ssid], "Type": 'I', "Poll": poll_final, "Payload": payload, "Com": 'COM'})
-                self.transceiver.send_state = (self.transceiver.send_state + 1)%self.transceiver.modulo
+                self.transceiver.frame_backlog.insert(current_send_state, {"Dest":[self.transceiver.dest_addr, self.transceiver.dest_ssid], "Type": 'I', "Poll": poll_final, "Payload": payload, "Com": 'COM'})
+
+            self.transceiver.set_state_variable("vs", ((current_send_state + 1)%self.transceiver.modulo))
+            # self.transceiver.send_state = (self.transceiver.send_state + 1)%self.transceiver.modulo
+
+            stuffing_time = time.time() - start_time - c_field_time - checksum_time - forming_time - lsb_time - lock_time_stuffing - lock_time
+            
+            # self.transceiver.logger.debug(30*"=")
+            # self.transceiver.logger.debug(f"Acquiring lock took: {round(lock_time*1000)} ms")
+            # self.transceiver.logger.debug(f"C Field encoding took: {round(c_field_time * 1000)} ms")
+            # self.transceiver.logger.debug(f"Checksum calculation took: {round(checksum_time*1000)} ms")
+            # self.transceiver.logger.debug(f"Frame forming took: {round(forming_time*1000)} ms")
+            # self.transceiver.logger.debug(f"bit order reversing took: {round(lsb_time*1000)} ms")
+            # self.transceiver.logger.debug(f"Acquiring lock for bitstuffing took: {round(lock_time_stuffing*1000)} ms")
+            # self.transceiver.logger.debug(f"Bitstuffing took: {round(stuffing_time*1000)} ms")
+            # self.transceiver.logger.debug(f"Total time: {round((time.time() - start_time)*1000)} ms")
+            # self.transceiver.logger.debug(30*"=")
               
             return bitframe
         
@@ -146,8 +172,9 @@ class Framer:
     def __build_S_frame(self, src, dest, frametype, poll_final=False):
 
         """ Prepare control field """
-        with self.transceiver.lock:
-            c_field = bs.BitArray(uint=self.transceiver.receive_state, length=3) + bs.BitArray(bool=poll_final) + bs.BitArray(bin=S_FRAMES[frametype])
+        # with self.transceiver.lock:
+        #     c_field = bs.BitArray(uint=self.transceiver.receive_state, length=3) + bs.BitArray(bool=poll_final) + bs.BitArray(bin=S_FRAMES[frametype])
+        c_field = bs.BitArray(uint=self.transceiver.get_state_variable("vr"), length=3) + bs.BitArray(bool=poll_final) + bs.BitArray(bin=S_FRAMES[frametype])
 
         """ Calculate CRC"""
 
@@ -275,45 +302,50 @@ class Framer:
 
         
         com = 'COM' if dest_ssid[0] == 1 and src_ssid[0] == 0 else 'RES'
-        with self.transceiver.lock:
+        # with self.transceiver.lock:
             
-            """ Extract control field data to return """
-            if c_field[-1] == 0: # For an Information Frame
+        """ Extract control field data to return """
+        if c_field[-1] == 0: # For an Information Frame
 
-                nr, poll, ns, _ = c_field.unpack('uint:3, bool, uint:3, bool')
-                if ns == self.transceiver.receive_state:
-                    frametype = "I"
-                    return {"Type": frametype, "Poll": poll, "Pid-Data": pid_and_info, "Nr": nr, "Ns":ns, "Com": com}
-                
-                else: 
-                    self.transceiver.logger.debug('Frame Sequece Error: n(s) = %d, v(r) = %d, n(r) = %d, v(s) = %d', ns, self.transceiver.receive_state, nr, self.transceiver.send_state)
-                    frametype = "RECOVERY"
-                    return {"Type": frametype, "Poll": poll, "Pid-Data": pid_and_info, "Nr": nr, "Ns":ns, "Com": com}
-                
+            nr, poll, ns, _ = c_field.unpack('uint:3, bool, uint:3, bool')
+            # self.transceiver.lock.acquire()
 
-            elif c_field[-1] == 1 and c_field[-2] == 0: # For a supervisory frame
-
-                nr, poll, frametype_bits = c_field.unpack('uint:3, bool, bits:4')
-                try:
-                    frametype = S_FRAMES_INVERSE[frametype_bits.bin]
-                except:
-                    self.transceiver.logger.debug("Frametype Error, invalid c_field encoding")
-                    return {"Type": 'ERROR', "Poll": False, "Pid-Data": None, "Nr": None, "Ns":None, "Com": None}
-                    
-                return {"Type": frametype, "Poll": poll, "Pid-Data": pid_and_info, "Nr": nr, "Ns":None, "Com": com}
+            # if ns == self.transceiver.receive_state:
+            if ns == self.transceiver.get_state_variable("vr"):
+                # self.transceiver.lock.release()
+                frametype = "I"
+                return {"Type": frametype, "Poll": poll, "Pid-Data": pid_and_info, "Nr": nr, "Ns":ns, "Com": com}
             
-            elif c_field[-1] == 1 and c_field[-2] == 1: # For an unnumbered frame
+            else: 
+                self.transceiver.logger.debug('Frame Sequece Error: n(s) = %d, v(r) = %d, n(r) = %d, v(s) = %d', ns, self.transceiver.get_state_variable("vr"), nr, self.transceiver.get_state_variable("vs"))
+                # self.transceiver.lock.release()
+                frametype = "RECOVERY"
+                return {"Type": frametype, "Poll": poll, "Pid-Data": pid_and_info, "Nr": nr, "Ns":ns, "Com": com}
+            
 
-                frametype_bits1, poll, frametype_bits2 = c_field.unpack('bits:3, bool, bits:4')
-                frametype_bits = frametype_bits1 + frametype_bits2
+        elif c_field[-1] == 1 and c_field[-2] == 0: # For a supervisory frame
 
-                try:
-                    frametype = U_FRAMES_INVERSE[frametype_bits.bin]
-                except:
-                    self.transceiver.logger.debug("Frametype Error, incalid c_field encoding!")
-                    return {"Type": 'ERROR', "Poll": False, "Pid-Data": None, "Nr": None, "Ns":None, "Com": None}
+            nr, poll, frametype_bits = c_field.unpack('uint:3, bool, bits:4')
+            try:
+                frametype = S_FRAMES_INVERSE[frametype_bits.bin]
+            except:
+                self.transceiver.logger.debug("Frametype Error, invalid c_field encoding")
+                return {"Type": 'ERROR', "Poll": False, "Pid-Data": None, "Nr": None, "Ns":None, "Com": None}
                 
-                return {"Type": frametype, "Poll": poll, "Pid-Data": pid_and_info, "Nr": None, "Ns":None, "Com": com}
+            return {"Type": frametype, "Poll": poll, "Pid-Data": pid_and_info, "Nr": nr, "Ns":None, "Com": com}
+        
+        elif c_field[-1] == 1 and c_field[-2] == 1: # For an unnumbered frame
+
+            frametype_bits1, poll, frametype_bits2 = c_field.unpack('bits:3, bool, bits:4')
+            frametype_bits = frametype_bits1 + frametype_bits2
+
+            try:
+                frametype = U_FRAMES_INVERSE[frametype_bits.bin]
+            except:
+                self.transceiver.logger.debug("Frametype Error, incalid c_field encoding!")
+                return {"Type": 'ERROR', "Poll": False, "Pid-Data": None, "Nr": None, "Ns":None, "Com": None}
+            
+            return {"Type": frametype, "Poll": poll, "Pid-Data": pid_and_info, "Nr": None, "Ns":None, "Com": com}
 
         #we should never get here
         self.transceiver.logger.debug("Something went wrong while decoding the c_field")
@@ -324,5 +356,5 @@ class Framer:
         @return: int checksum
     """
     def calc_checksum(self, data:bytes):
-        with self.transceiver.lock:
+        # with self.transceiver.lock:
             return self.crc_calculator.checksum(data) & 0xFFFF # Effectively turns negative numbers back into positive, so int -> uint

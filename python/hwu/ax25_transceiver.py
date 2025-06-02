@@ -25,6 +25,7 @@ import bitstring as bs
 import threading
 import socket
 import logging
+import time
 
 from .ax25_framer import Framer
 from .ax25_constants import PID
@@ -81,6 +82,8 @@ class Transceiver:
         self.timer_cancel_t1 = threading.Event()
         self.timer_reset_t3 = threading.Event()
         self.timer_cancel_t3 = threading.Event()
+        self.t1_try_count = 0
+        self.t3_try_count = 0
         # self.tcp_isServer = tcp_isServer
 
         """ Setup internal links to other classes"""
@@ -95,18 +98,23 @@ class Transceiver:
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.framequeue = []
         self.frame_input_queue = []
-        frame_output_queue = []
+        # frame_output_queue = []  Not actually used
         self.lock = threading.Lock()
+        self.framequeue_not_empty = threading.Condition(self.lock)
+        self.frame_input_queue_not_empty = threading.Condition(self.lock)
+        # self.lock = TrackingLock("Transceiver_Lock")
         self.frame_backlog = [0 for num in range(self.receive_window_k)]
         self.ns_before_seqbreak = 0
+        self.awaiting_final = False # Response to a Poll bit
     
 
         """ Set internal variables """
         self.state = 'DISC'
         self.rej_active = 0
-        self.send_state = 0
-        self.receive_state = 0
-        self.ack_state = 0
+        # self.send_state = 0
+        # self.receive_state = 0
+        # self.ack_state = 0
+        self.state_variables = {'vs': 0, 'vr': 0, 'va': 0}
 
         """ Declare remote transceiver address and ssid for connecting procedures"""
         self.dest_addr = dest_addr
@@ -120,28 +128,130 @@ class Transceiver:
         # self.logger = logging.getLogger(__name__)
         self.logger.setLevel(logging.DEBUG)
 
-        if not self.logger.hasHandlers():
-            self.fh = logging.FileHandler(f'ax25_{self.src_addr}.log', mode='w')
-            self.fh.setLevel(logging.DEBUG)
-            self.logger.addHandler(self.fh)
+        # if not self.logger.hasHandlers():
+        self.fh = logging.FileHandler(f'ax25_{self.src_addr}.log', mode='w')
+        self.fh.setLevel(logging.DEBUG)
+        self.logger.addHandler(self.fh)
 
-        """ Setup debugging/testing feature to drop frames""" #TODO: Remove at some point/rework!
-        # self.debugging_drop_frame = [3,4,7]
+        self.timing_logger = logging.getLogger(f"{__name__}.{self.src_addr}.timing")
+        self.timing_logger.setLevel(logging.DEBUG)
+        timing_file = logging.FileHandler(f'ax25_{self.src_addr}_timing.log', mode='w')
+        timing_file.setLevel(logging.DEBUG)
+        self.timing_logger.addHandler(timing_file)
 
+
+    """ Thread safe getters and setters for different transceiver variables """
     def get_state(self):
-        return self.state
+        with self.lock:
+            return self.state
     
-    def get_state_variables(self):
-        return [self.send_state, self.receive_state, self.ack_state]
+    def get_state_variable(self, key):
+        with self.lock:
+            return self.state_variables.get(key)
     
     def set_state(self, state):
-        self.state = state
+        with self.lock:
+            self.state = state
+
+    def set_state_variable(self, key, value):
+        with self.lock:
+            self.state_variables[key] = value
+            return
 
     def reset_variables(self):
-        self.send_state = 0
-        self.receive_state = 0
-        self.ack_state = 0
+        with self.lock:
+            self.send_state = 0
+            self.receive_state = 0
+            self.ack_state = 0
+            self.state_variables = {'vs': 0, 'vr': 0, 'va': 0}
+            return
 
     def set_remote_busy(self, state:bool):
-        self.remote_busy = state
+        with self.lock:
+            self.remote_busy = state
+    
+    def get_remote_busy(self):
+        with self.lock:
+            return self.remote_busy
+        
+    def set_rej_active(self, state:bool):
+        with self.lock:
+            self.rej_active = state
+
+    def get_rej_active(self):
+        with self.lock:
+            return self.rej_active
+        
+    def set_ns_before_seqbreak(self, ns:int):
+        with self.lock:
+            self.ns_before_seqbreak = ns
+
+    def get_ns_before_seqbreak(self):
+        with self.lock:
+            return self.ns_before_seqbreak
+        
+    def get_t1_try_count(self):
+        with self.lock:
+            return self.t1_try_count
+        
+    def set_t1_try_count(self, count:int):
+        with self.lock:
+            self.t1_try_count = count
+
+    def get_t3_try_count(self):
+        with self.lock:
+            return self.t3_try_count
+        
+    def set_t3_try_count(self, count:int):
+        with self.lock:
+            self.t3_try_count = count
+
+    # def get_timer_states(self):
+    #     pass
+
+
+class TrackingLock:
+    def __init__(self, name):
+        self.name = name
+        self.lock = threading.Lock()
+        self.locals = threading.local()
+        self.locals.holder  = None
+        self.locals.acquire_time = None
+        self.lock_logger = logging.getLogger("LOCKS")
+        self.lock_logger.setLevel(logging.DEBUG)
+        # if not self.logger.hasHandlers():
+        self.fh = logging.FileHandler('ax25_locks.log', mode='w')
+        self.fh.setLevel(logging.DEBUG)
+        self.lock_logger.addHandler(self.fh)
+
+    def acquire(self, blocking=True):
+        if self.lock.acquire(blocking):
+            # self.lock.acquire(blocking)
+            self.locals.holder = threading.current_thread().name
+            self.locals.acquire_time = time.time()
+            self.lock_logger.info(30*"=")
+            self.lock_logger.info(f"Lock '{self.name}' acquired by thread '{self.locals.holder}'")
+            return True
+        return False
+
+    def release(self):
+        if self.locals.holder == threading.current_thread().name:
+            hold_time = time.time() - self.locals.acquire_time
+            self.lock.release()
+            self.lock_logger.info(f"Lock '{self.name}' released by thread '{self.locals.holder}' after {round(hold_time*1000)} ms")
+            self.lock_logger.info(30*"=")
+            self.locals.holder = None
+            self.locals.acquire_time = None
+        else:
+            pass
+            self.lock_logger.error(f"Thread '{threading.current_thread().name}' tried to release lock '{self.name}' held by thread '{self.locals.holder}'")
+            self.lock_logger.info(30*"=")
+
+    def __enter__(self):
+        self.acquire()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.release()
+
 

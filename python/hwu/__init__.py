@@ -33,5 +33,6 @@ from .ax25_procedures import ax25_procedures
 # from .usrp_burst_tagger import usrp_burst_tagger
 from .ax25_extract_frame_v2 import ax25_extract_frame_v2
 from .physical_header_barker_code import physical_header_barker_code
+from .ax25_testing_input_only import ax25_testing_input_only
 # from .usrp_burst_tx import usrp_burst_tx
 #

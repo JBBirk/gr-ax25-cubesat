@@ -20,10 +20,13 @@ class qa_ax25_procedures(gr_unittest.TestCase):
 
     def test_instance(self):
         # FIXME: Test will fail until you pass sensible arguments to the constructor
-        instance = ax25_procedures()
+        instance = ax25_procedures(src_addr='HWUGND', dest_addr='HWUGND', rej="REJ")
 
-    def test_001_descriptive_test_name(self):
+    def test_001_frame_gen(self):
         # set up fg
+
+        procedures = ax25_procedures(src_addr='HWUGND', dest_addr='HWUGND', rej="REJ")
+
         self.tb.run()
         # check data
 
