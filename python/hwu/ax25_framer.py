@@ -317,7 +317,7 @@ class Framer:
                 return {"Type": frametype, "Poll": poll, "Pid-Data": pid_and_info, "Nr": nr, "Ns":ns, "Com": com}
             
             else: 
-                self.transceiver.logger.debug('Frame Sequece Error: n(s) = %d, v(r) = %d, n(r) = %d, v(s) = %d', ns, self.transceiver.get_state_variable("vr"), nr, self.transceiver.get_state_variable("vs"))
+                self.transceiver.logger.debug('Frame Sequence Error: n(s) = %d, v(r) = %d, n(r) = %d, v(s) = %d', ns, self.transceiver.get_state_variable("vr"), nr, self.transceiver.get_state_variable("vs"))
                 # self.transceiver.lock.release()
                 frametype = "RECOVERY"
                 return {"Type": frametype, "Poll": poll, "Pid-Data": pid_and_info, "Nr": nr, "Ns":ns, "Com": com}

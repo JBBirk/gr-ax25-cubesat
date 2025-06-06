@@ -210,48 +210,48 @@ class Transceiver:
     #     pass
 
 
-class TrackingLock:
-    def __init__(self, name):
-        self.name = name
-        self.lock = threading.Lock()
-        self.locals = threading.local()
-        self.locals.holder  = None
-        self.locals.acquire_time = None
-        self.lock_logger = logging.getLogger("LOCKS")
-        self.lock_logger.setLevel(logging.DEBUG)
-        # if not self.logger.hasHandlers():
-        self.fh = logging.FileHandler('ax25_locks.log', mode='w')
-        self.fh.setLevel(logging.DEBUG)
-        self.lock_logger.addHandler(self.fh)
+# class TrackingLock:
+#     def __init__(self, name):
+#         self.name = name
+#         self.lock = threading.Lock()
+#         self.locals = threading.local()
+#         self.locals.holder  = None
+#         self.locals.acquire_time = None
+#         self.lock_logger = logging.getLogger("LOCKS")
+#         self.lock_logger.setLevel(logging.DEBUG)
+#         # if not self.logger.hasHandlers():
+#         self.fh = logging.FileHandler('ax25_locks.log', mode='w')
+#         self.fh.setLevel(logging.DEBUG)
+#         self.lock_logger.addHandler(self.fh)
 
-    def acquire(self, blocking=True):
-        if self.lock.acquire(blocking):
-            # self.lock.acquire(blocking)
-            self.locals.holder = threading.current_thread().name
-            self.locals.acquire_time = time.time()
-            self.lock_logger.info(30*"=")
-            self.lock_logger.info(f"Lock '{self.name}' acquired by thread '{self.locals.holder}'")
-            return True
-        return False
+#     def acquire(self, blocking=True):
+#         if self.lock.acquire(blocking):
+#             # self.lock.acquire(blocking)
+#             self.locals.holder = threading.current_thread().name
+#             self.locals.acquire_time = time.time()
+#             self.lock_logger.info(30*"=")
+#             self.lock_logger.info(f"Lock '{self.name}' acquired by thread '{self.locals.holder}'")
+#             return True
+#         return False
 
-    def release(self):
-        if self.locals.holder == threading.current_thread().name:
-            hold_time = time.time() - self.locals.acquire_time
-            self.lock.release()
-            self.lock_logger.info(f"Lock '{self.name}' released by thread '{self.locals.holder}' after {round(hold_time*1000)} ms")
-            self.lock_logger.info(30*"=")
-            self.locals.holder = None
-            self.locals.acquire_time = None
-        else:
-            pass
-            self.lock_logger.error(f"Thread '{threading.current_thread().name}' tried to release lock '{self.name}' held by thread '{self.locals.holder}'")
-            self.lock_logger.info(30*"=")
+#     def release(self):
+#         if self.locals.holder == threading.current_thread().name:
+#             hold_time = time.time() - self.locals.acquire_time
+#             self.lock.release()
+#             self.lock_logger.info(f"Lock '{self.name}' released by thread '{self.locals.holder}' after {round(hold_time*1000)} ms")
+#             self.lock_logger.info(30*"=")
+#             self.locals.holder = None
+#             self.locals.acquire_time = None
+#         else:
+#             pass
+#             self.lock_logger.error(f"Thread '{threading.current_thread().name}' tried to release lock '{self.name}' held by thread '{self.locals.holder}'")
+#             self.lock_logger.info(30*"=")
 
-    def __enter__(self):
-        self.acquire()
-        return self
+#     def __enter__(self):
+#         self.acquire()
+#         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.release()
+#     def __exit__(self, exc_type, exc_val, exc_tb):
+#         self.release()
 
 

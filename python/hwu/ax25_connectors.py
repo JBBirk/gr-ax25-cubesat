@@ -151,7 +151,7 @@ class Downlinker:
     """ Downlinker Main Run loop"""
     def _run(self) -> None:
 
-        testing_num_frames = 0
+        # testing_num_frames = 0
 
         while not self._kill.isSet():
             self.transceiver.lock.acquire()
@@ -186,9 +186,9 @@ class Downlinker:
             #     self.transceiver.logger.warning("")
             #     # time.sleep(0.5)
             #     continue
-            if testing_num_frames == 2: #For testing only, drop first received frame
-                self.transceiver.logger.debug(f"Second frame dropped")
-                continue
+            # if testing_num_frames == 2: #For testing only, drop first received frame
+            #     self.transceiver.logger.debug(f"Second frame dropped")
+            #     continue
 
             try:
                 self.handler_functions[data['Type']](data)
@@ -309,6 +309,7 @@ class Downlinker:
             return None
     
         elif self.transceiver.rej == "SREJ":
+            self.transceiver.logger.warning("SREJ type error handling not implemented yet!")
             return
         
         # Should never get here
@@ -380,6 +381,7 @@ class Downlinker:
             # if self.transceiver.ack_state == self.transceiver.send_state: # No lost frames
             #     return
             self.transceiver.logger.debug("Final frame received, answering")
+            self.transceiver.set_t1_try_count(0)
             if self.transceiver.get_state_variable("va") == self.transceiver.get_state_variable("vs"): # No lost frames
                 return
             
@@ -434,7 +436,7 @@ class Downlinker:
             
             # if self.transceiver.ack_state == self.transceiver.send_state: # No lost frames
             #     return
-
+            self.transceiver.set_t1_try_count(0)
             if self.transceiver.get_state_variable("va") == self.transceiver.get_state_variable("vs"): # No lost frames
                 return
             

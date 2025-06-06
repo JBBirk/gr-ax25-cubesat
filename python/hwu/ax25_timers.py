@@ -41,10 +41,10 @@ class Timers:
     """ Thread loop that starts timers T1 and T3, then idles """
     def _run(self):
 
-        self.transceiver.logger.debug("Setting up daughter threads")
+        # self.transceiver.logger.debug("Setting up daughter threads")
         self.setup_event_threads()
 
-        self.transceiver.logger.debug("Entering run loop")
+        # self.transceiver.logger.debug("Entering run loop")
         while not self._kill.is_set():
             self._kill.wait(timeout=1)
 
@@ -115,7 +115,7 @@ class Timers:
 
     def setup_event_threads(self):
 
-        self.transceiver.logger.debug("Inside thread setup function")
+        # self.transceiver.logger.debug("Inside thread setup function")
         for name, event in self.events.items():
             threading.Thread(target=self.wait_for_event,
             args=[event, 
