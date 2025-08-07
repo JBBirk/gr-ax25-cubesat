@@ -98,11 +98,9 @@ class Transceiver:
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.framequeue = []
         self.frame_input_queue = []
-        # frame_output_queue = []  Not actually used
         self.lock = threading.Lock()
         self.framequeue_not_empty = threading.Condition(self.lock)
         self.frame_input_queue_not_empty = threading.Condition(self.lock)
-        # self.lock = TrackingLock("Transceiver_Lock")
         self.frame_backlog = [0 for num in range(self.receive_window_k)]
         self.ns_before_seqbreak = 0
         self.awaiting_final = False # Response to a Poll bit
@@ -111,9 +109,6 @@ class Transceiver:
         """ Set internal variables """
         self.state = 'DISC'
         self.rej_active = 0
-        # self.send_state = 0
-        # self.receive_state = 0
-        # self.ack_state = 0
         self.state_variables = {'vs': 0, 'vr': 0, 'va': 0}
 
         """ Declare remote transceiver address and ssid for connecting procedures"""
@@ -125,7 +120,6 @@ class Transceiver:
         """ Setup logger """
 
         self.logger = logging.getLogger(f"{__name__}.{self.src_addr}")
-        # self.logger = logging.getLogger(__name__)
         self.logger.setLevel(logging.DEBUG)
 
         # if not self.logger.hasHandlers():
@@ -205,53 +199,4 @@ class Transceiver:
     def set_t3_try_count(self, count:int):
         with self.lock:
             self.t3_try_count = count
-
-    # def get_timer_states(self):
-    #     pass
-
-
-# class TrackingLock:
-#     def __init__(self, name):
-#         self.name = name
-#         self.lock = threading.Lock()
-#         self.locals = threading.local()
-#         self.locals.holder  = None
-#         self.locals.acquire_time = None
-#         self.lock_logger = logging.getLogger("LOCKS")
-#         self.lock_logger.setLevel(logging.DEBUG)
-#         # if not self.logger.hasHandlers():
-#         self.fh = logging.FileHandler('ax25_locks.log', mode='w')
-#         self.fh.setLevel(logging.DEBUG)
-#         self.lock_logger.addHandler(self.fh)
-
-#     def acquire(self, blocking=True):
-#         if self.lock.acquire(blocking):
-#             # self.lock.acquire(blocking)
-#             self.locals.holder = threading.current_thread().name
-#             self.locals.acquire_time = time.time()
-#             self.lock_logger.info(30*"=")
-#             self.lock_logger.info(f"Lock '{self.name}' acquired by thread '{self.locals.holder}'")
-#             return True
-#         return False
-
-#     def release(self):
-#         if self.locals.holder == threading.current_thread().name:
-#             hold_time = time.time() - self.locals.acquire_time
-#             self.lock.release()
-#             self.lock_logger.info(f"Lock '{self.name}' released by thread '{self.locals.holder}' after {round(hold_time*1000)} ms")
-#             self.lock_logger.info(30*"=")
-#             self.locals.holder = None
-#             self.locals.acquire_time = None
-#         else:
-#             pass
-#             self.lock_logger.error(f"Thread '{threading.current_thread().name}' tried to release lock '{self.name}' held by thread '{self.locals.holder}'")
-#             self.lock_logger.info(30*"=")
-
-#     def __enter__(self):
-#         self.acquire()
-#         return self
-
-#     def __exit__(self, exc_type, exc_val, exc_tb):
-#         self.release()
-
 

@@ -1,0 +1,4 @@
+build/
+build_backup
+header_barker_stream_backup.txt
+*.log

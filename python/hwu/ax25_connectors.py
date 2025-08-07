@@ -52,26 +52,22 @@ class Uplinker:
     def _run(self) -> None:
         
         while not self._kill.isSet():
-        # with self.transceiver.lock:
+
             self.transceiver.lock.acquire()
             if self.transceiver.framequeue:
                 start_time = time.time()
-                # request = self.transceiver.framequeue[0]
                 request = self.transceiver.framequeue.pop(0)
                 self.transceiver.lock.release()
+
                 # Check whether receive window would be exceeded 
-                # if request["Type"] == 'I' and self.transceiver.send_state == (self.transceiver.ack_state + self.transceiver.receive_window_k)%self.transceiver.modulo: #TODO Check if this interferes with recovery by blocking frames fomr sending
                 if request["Type"] == 'I' and self.transceiver.get_state_variable('vs')== (self.transceiver.get_state_variable('va') + self.transceiver.receive_window_k)%self.transceiver.modulo: #TODO Check if this interferes with recovery by blocking frames fomr sending
                     with self.transceiver.lock:
                         self.transceiver.framequeue.insert(0, request)
                     self.transceiver.logger.debug(f"Remote receive window full, waiting for clear. Acked: {self.transceiver.get_state_variable('va')}, Sent: {self.transceiver.get_state_variable('vs')}") # Framequeue at {len(self.transceiver.framequeue)}")
-                    # print("Receive window overflow")
-                    # self.transceiver.lock.release()
                     time.sleep(0.1) #TODO rework waiting procedure
                     continue
+
                 else:
-                    # self.transceiver.framequeue.pop(0)
-                    # self.transceiver.lock.release()
                     raw_frame = self.framer.frame(
                                             request["Type"], #Frametype
                                             self.transceiver.src_addr,
@@ -84,17 +80,17 @@ class Uplinker:
                                             self.transceiver.modulo,
                                             request["Poll"] #Poll/Final
                                             )
-                    # framing_time = time.time() - start_time
+                    
                     if raw_frame is None:
                         self.transceiver.logger.debug("Framing failed!")
                         continue
+
                     self.send(raw_frame)
                     send_time = time.time() - start_time 
                     self.transceiver.timing_logger.debug("Sending " + request["Type"] + f" frame took {send_time*1000:.2f}ms")
+                    time.sleep(0.01)
                     if request["Type"] == 'I':
-                        # self.transceiver.logger.debug("Pre T1 reset")
                         self.transceiver.timer_reset_t1.set()
-                        # self.transceiver.logger.debug("Post T1 reset")
                         
             else: #framequeue empty
                 self.transceiver.lock.release()
@@ -158,7 +154,6 @@ class Downlinker:
             if not self.transceiver.frame_input_queue:
                 self.transceiver.lock.release()
                 time.sleep(0.01) # TODO: Rework waiting for frame procedure
-                # self.transceiver.lock.release()
                 continue
             try:
                 start_time = time.time()
@@ -173,57 +168,15 @@ class Downlinker:
             try:
                 data = self.framer.deframe(raw_frame)
                 self.transceiver.logger.debug(f"Raw Frame received: {raw_frame.hex}, Decoded Frame: {data}")
-                testing_num_frames += 1
             except Exception as e:
                 self.transceiver.logger.warning(f"The following error occured while deframing: {e}")
                 continue
-
-            # TODO: Rework to use dict insted of if chain
-            # self.transceiver.logger.debug(f"Data Frame received: {data}")
-            # if data['Type'] == 'ERROR':
-            #     # print("Error Received")
-            #     self.transceiver.logger.warning("=========== Internal Error occured, see last log entry ===========")
-            #     self.transceiver.logger.warning("")
-            #     # time.sleep(0.5)
-            #     continue
-            # if testing_num_frames == 2: #For testing only, drop first received frame
-            #     self.transceiver.logger.debug(f"Second frame dropped")
-            #     continue
 
             try:
                 self.handler_functions[data['Type']](data)
                 self.transceiver.timing_logger.debug(f"Answering to {data['Type']} frame took {(time.time() - start_time)*1000:.2f}ms")
             except:
                 self.transceiver.logger.warning(f"No correspondig handler for frame type {data['Type']}")
-
-            # Old implemetation, just kept as backup (I know it's a mess)
-
-            # if data['Type'] == 'RECOVERY':
-            #     self.__RECOVERY_frame_handler(data)
-            #     continue
-
-            # if data['Type'] == 'I':
-            #     self.__I_frame_handler(data)
-            #     continue
-
-            # if data['Type'] == 'REJ':
-            #     self.__REJ_frame_handler(data)
-            #     continue
-
-            # if data['Type'] == 'SREJ':
-            #     self.__SREJ_frame_handler(data)
-            #     continue
-
-            # if data['Type'] == 'RR':
-            #     self.__RR_frame_handler(data)
-            #     continue
-
-            # if data['Type'] == 'RNR':
-            #     self.__RNR_frame_handler(data)
-            #     continue
-
-            # self.transceiver.logger.warning("Should never get here!")
-            # raise RuntimeError
     
 
     def __ERROR_frame_handler(self, data):
@@ -238,9 +191,6 @@ class Downlinker:
 
             self.__acknowledgement_handler(data)
 
-        #Insert actual handling of data here, when implemented differently
-
-        # self.transceiver.logger.debug(data["Pid-Data"][8:].tobytes())# .decode())
         byte_vec = [byte for byte in data["Pid-Data"][8:].tobytes()]
 
         # self.transceiver.logger.debug("Answering to message")
@@ -250,29 +200,19 @@ class Downlinker:
         except Exception as e:
             self.logger.warning(f"Exception occured during payload out: {e}")
 
-        # with self.transceiver.lock:
-
         if self.transceiver.get_remote_busy():
             self.transceiver.timer_reset_t3.set()
-            # if self.transceiver.remote_busy:
-            #     self.transceiver.timer_reset_t3.set()
 
+        # Update internal state variables
         self.transceiver.set_state_variable("vr", (self.transceiver.get_state_variable("vr") + 1)%self.transceiver.modulo)
-            # Update internal state variables
-            # self.transceiver.receive_state = (self.transceiver.receive_state + 1)%self.transceiver.modulo
-            # self.transceiver.ack_state = data["Nr"] # N(r)
 
-
-
-            # Check if all lost frames have been recovered
-        # if self.transceiver.rej_active and data["Ns"] == self.transceiver.ns_before_seqbreak-1 and self.transceiver.rej == "REJ": 
+        # Check if all lost frames have been recovered
         if self.transceiver.get_rej_active() and data["Ns"] == self.transceiver.get_ns_before_seqbreak()-1 and self.transceiver.rej == "REJ":
             # self.transceiver.rej_active = 0
             self.transceiver.set_rej_active(0)
             self.transceiver.logger.debug("REJ Recovery finished, all missing frames received")
 
             # Add supervisory frame response if needed (No I-frames in frame queue, remote receive window full)
-        # if not self.transceiver.framequeue or self.transceiver.send_state == (self.transceiver.ack_state + self.transceiver.receive_window_k)%self.transceiver.modulo: #or self.transceiver.t1_try_count > 0:
         if not self.transceiver.framequeue or self.transceiver.get_state_variable('vs') == (self.transceiver.get_state_variable('va') + self.transceiver.receive_window_k)%self.transceiver.modulo:
             busy_state = self.transceiver.get_state() == 'BUSY'
             with self.transceiver.lock:
@@ -290,17 +230,13 @@ class Downlinker:
             self.transceiver.logger.debug(f"Sequence Error occured, now in {self.transceiver.rej} recovery!")
         else:
             self.transceiver.logger.debug(f"Still in {self.transceiver.rej} recovery!")
-        # with self.transceiver.lock:
-            # if self.transceiver.rej_active == 1 and data["Poll"] == True: #Anser to Poll while already in reject mode. Needed for recovery of a lost REJ frame, expected when Timer T1 runs out
-            #     self.transceiver.framequeue.insert(0, {"Dest":[self.transceiver.dest_addr, self.transceiver.dest_ssid], "Type":'REJ', "Poll":True, "Payload": None, "Com": 'COM'})
-            #     return None
-        if self.transceiver.get_rej_active() and data["Poll"]:
+
+        if self.transceiver.get_rej_active() and data["Poll"]: #Anser to Poll while already in reject mode. Needed for recovery of a lost REJ frame, expected when Timer T1 runs out
             with self.transceiver.lock:
                 self.transceiver.framequeue.insert(0, {"Dest":[self.transceiver.dest_addr, self.transceiver.dest_ssid], "Type":'REJ', "Poll":True, "Payload": None, "Com": 'COM'})
 
         if self.transceiver.rej == "REJ":
-            if not self.transceiver.get_rej_active():
-            # if self.transceiver.rej_active != 1: # Don't resend REJ frame if already happend, or it will mess up the procedure
+            if not self.transceiver.get_rej_active(): # Don't resend REJ frame if already happend, or it will mess up the procedure
                 self.transceiver.set_ns_before_seqbreak(data["Ns"])
                 with self.transceiver.lock:
                     self.transceiver.framequeue.insert(0, {"Dest":[self.transceiver.dest_addr, self.transceiver.dest_ssid], "Type":'REJ', "Poll":data["Poll"], "Payload": None, "Com":'COM'})
@@ -321,22 +257,11 @@ class Downlinker:
 
         self.__acknowledgement_handler(data)
 
-        # iters = 0
-        # with self.transceiver.lock:
         self.transceiver.set_remote_busy(False)
-            # if data["Com"] == 'COM' and data["Poll"] == True:
-            #     self.transceiver.framequeue.insert(0, {"Dest":[self.transceiver.dest_addr, self.transceiver.dest_ssid], "Type":'RR', "Poll":True, "Payload": None, "Com": 'RES'}) #TODO: double check if this is really and RES frame. Not in doc but should be form my understanding
 
-            # sendstate_at_rej = self.transceiver.get_state_variable('vs')
-            # self.transceiver.send_state = data["Nr"]
         sendstate_at_rej = self.transceiver.get_state_variable('vs')
         self.transceiver.set_state_variable('vs', data["Nr"])
         self.transceiver.logger.debug(f"Offset, transceiver at: {sendstate_at_rej}, remote expected: {data['Nr']}")
-            
-            # while (data["Nr"] + iters)%self.transceiver.modulo != sendstate_at_rej: #TODO rework to for loop using range((end - start)%modulo)
-            #     self.transceiver.framequeue.insert(iters, self.transceiver.frame_backlog[(data["Nr"]+iters)%self.transceiver.modulo])
-            #     self.transceiver.logger.debug(f"Added frame from backlog pos {(data['Nr']+iters)%self.transceiver.modulo} to framequeue at pos {iters}")
-            #     iters += 1
 
         for iters in range((sendstate_at_rej - data["Nr"])%self.transceiver.modulo):
             with self.transceiver.lock:
@@ -352,20 +277,16 @@ class Downlinker:
     
     def __RR_frame_handler(self, data):
         
-        # with self.transceiver.lock:
         self.transceiver.set_remote_busy(False)
-            # if data["Nr"] != self.transceiver.ack_state: # Address this, as first frame has nr of 0 and will not change ack state
-            #     self.transceiver.ack_state = data["Nr"]  # -> Should be fixed, V(a) is now equal to remotes V(r) and thus received N(r) 
-            #                                             # -> First frame overall can't ack anything, so this is correct!
 
         self.__acknowledgement_handler(data)
                                                 
-
         if data["Poll"] == True and self.transceiver.get_t1_try_count() == 0: #Answer to Poll coming from remote
             self.transceiver.logger.debug("Poll frame received, answering")
-            # if self.transceiver.rej_active == 1:     
-            #     self.transceiver.framequeue.insert(0, {"Dest":[self.transceiver.dest_addr, self.transceiver.dest_ssid], "Type":'REJ', "Poll":True, "Payload": None, "Com": 'RES'})
-            #     return
+
+            self.transceiver.set_ns_before_seqbreak(self.transceiver.get_state_variable("vr")) #Assume sequence break. Needed for REJ handling
+            self.transceiver.set_rej_active(1)
+
             if self.transceiver.get_state() == 'BUSY':
                 with self.transceiver.lock:
                     self.transceiver.framequeue.insert(0, {"Dest":[self.transceiver.dest_addr, self.transceiver.dest_ssid], "Type":'RNR', "Poll":True, "Payload": None, "Com": 'RES'})
@@ -377,9 +298,7 @@ class Downlinker:
             
         
         elif data["Poll"] == True and self.transceiver.get_t1_try_count() != 0: # final response to poll, act accrordingly
-            
-            # if self.transceiver.ack_state == self.transceiver.send_state: # No lost frames
-            #     return
+
             self.transceiver.logger.debug("Final frame received, answering")
             self.transceiver.set_t1_try_count(0)
             if self.transceiver.get_state_variable("va") == self.transceiver.get_state_variable("vs"): # No lost frames
@@ -390,11 +309,6 @@ class Downlinker:
             self.transceiver.set_state_variable('vs', data["Nr"])
             self.transceiver.logger.debug(f"Offset, transceiver at: {sendstate_at_rej}, remote expected: {data['Nr']}")
                 
-                # while (data["Nr"] + iters)%self.transceiver.modulo != sendstate_at_rej: #TODO rework to for loop using range((end - start)%modulo)
-                #     self.transceiver.framequeue.insert(iters, self.transceiver.frame_backlog[(data["Nr"]+iters)%self.transceiver.modulo])
-                #     self.transceiver.logger.debug(f"Added frame from backlog pos {(data['Nr']+iters)%self.transceiver.modulo} to framequeue at pos {iters}")
-                #     iters += 1
-
             for iters in range((sendstate_at_rej - data["Nr"])%self.transceiver.modulo):
                 with self.transceiver.lock:
                     self.transceiver.framequeue.insert(iters, self.transceiver.frame_backlog[(data["Nr"]+iters)%self.transceiver.modulo])
@@ -411,17 +325,9 @@ class Downlinker:
 
         self.transceiver.set_remote_busy(True)
 
-        self.__acknowledgement_handler(data)
-
-            # if data["Nr"] != self.transceiver.ack_state: # Address this, as first frame has nr of 0 and will not change ack state
-            #     self.transceiver.ack_state = data["Nr"]  # -> Should be fixed, V(a) is now equal to remotes V(r) and thus received N(r) 
-            #                                             # -> First frame overall can't ack anything, so this is correct!
-                                                    
+        self.__acknowledgement_handler(data)                           
 
         if data["Poll"] == True and self.transceiver.get_t1_try_count() == 0: #Answer to Poll coming from remote
-            # if self.transceiver.rej_active == 1:     
-            #     self.transceiver.framequeue.insert(0, {"Dest":[self.transceiver.dest_addr, self.transceiver.dest_ssid], "Type":'REJ', "Poll":True, "Payload": None, "Com": 'RES'})
-            #     return
             if self.transceiver.get_state() == 'BUSY':
                 with self.transceiver.lock:
                     self.transceiver.framequeue.insert(0, {"Dest":[self.transceiver.dest_addr, self.transceiver.dest_ssid], "Type":'RNR', "Poll":True, "Payload": None, "Com": 'RES'})
@@ -434,8 +340,6 @@ class Downlinker:
         
         elif data["Poll"] == True and self.transceiver.get_t1_try_count() != 0: # final response to poll, act accrordingly
             
-            # if self.transceiver.ack_state == self.transceiver.send_state: # No lost frames
-            #     return
             self.transceiver.set_t1_try_count(0)
             if self.transceiver.get_state_variable("va") == self.transceiver.get_state_variable("vs"): # No lost frames
                 return
@@ -444,11 +348,6 @@ class Downlinker:
             sendstate_at_rej = self.transceiver.get_state_variable('vs')
             self.transceiver.set_state_variable('vs', data["Nr"])
             self.transceiver.logger.debug(f"Offset, transceiver at: {sendstate_at_rej}, remote expected: {data['Nr']}")
-                
-                # while (data["Nr"] + iters)%self.transceiver.modulo != sendstate_at_rej: #TODO rework to for loop using range((end - start)%modulo)
-                #     self.transceiver.framequeue.insert(iters, self.transceiver.frame_backlog[(data["Nr"]+iters)%self.transceiver.modulo])
-                #     self.transceiver.logger.debug(f"Added frame from backlog pos {(data['Nr']+iters)%self.transceiver.modulo} to framequeue at pos {iters}")
-                #     iters += 1
 
             for iters in range((sendstate_at_rej - data["Nr"])%self.transceiver.modulo):
                 with self.transceiver.lock:
