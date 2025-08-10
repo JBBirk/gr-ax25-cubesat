@@ -1,0 +1,4 @@
+# gr-ax25-cubesat
+
+This is a GNU Radio out-of-tree module modelling a satellite link using AX.25. It encompasses AX.25 protocol procedures and supporting blocks for the physical layer handling.
+It contains a flowgraph enabling full duplex communication through GNU Radio and USRP radios, mirroring real satellite applications.
