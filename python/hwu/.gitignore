@@ -3,3 +3,6 @@
 *.pyo
 build*/
 examples/grc/*.py
+nrzi*
+qa_nrzi*
+usrp*

@@ -24,7 +24,7 @@ import random
 import bitstring as bs
 from gnuradio import gr, gr_unittest
 from gnuradio import blocks
-from ax25_extract_frame_v2 import ax25_extract_frame_v2 as frame_extractor
+from ax25_extract_frame import ax25_extract_frame as frame_extractor
 
 class qa_ax25_extract_frame(gr_unittest.TestCase):
 
@@ -241,4 +241,4 @@ if __name__ == '__main__':
 # import numpy as np
 # from gnuradio import gr, gr_unittest
 # from gnuradio import blocks
-# from ax25_extract_frame_v2 import ax25_extract_frame_v2 as frame_extractor
+# from ax25_extract_frame import ax25_extract_frame as frame_extractor
