@@ -6,10 +6,10 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 
-
 import pmt
 from gnuradio import gr
 from .ax25_transceiver import Transceiver
+
 
 class ax25_testing_input_only(gr.basic_block):
     """
@@ -36,32 +36,34 @@ class ax25_testing_input_only(gr.basic_block):
             out_sig=None)
         
         self.transceiver = Transceiver(src_addr, 
-                                       src_ssid,
-                                       dest_addr,
-                                       dest_ssid, 
-                                       full_duplex, 
-                                       rej, 
-                                       modulo, 
-                                       information_field_length, 
-                                       receive_window_k,
-                                       ack_timer,
-                                       retries,
-                                       gr_block=self)
-        
+                                        src_ssid,
+                                        dest_addr,
+                                        dest_ssid, 
+                                        full_duplex, 
+                                        rej, 
+                                        modulo, 
+                                        information_field_length, 
+                                        receive_window_k,
+                                        ack_timer,
+                                        retries,
+                                        gr_block=self)
     
         self.message_port_register_in(pmt.intern('Payload in'))
         self.set_msg_handler(pmt.intern('Payload in'), self.handle_payload_in)
         self.message_port_register_out(pmt.intern('Frame out'))
+        
 
         self.transceiver.uplinker.start()
         self.transceiver.downlinker.start()
         self.transceiver.timers.start()
+        
 
     def handle_payload_in(self, msg_pmt):
-        # print("Payload received: ", msg_pmt)
+        print("[TEST]Received payload: ", pmt.u8vector_elements(pmt.cdr(msg_pmt)))
         try:
-            with self.transceiver.lock:
-                self.transceiver.framequeue.append(
+            print(f"[TEST]Payload length：{len(bytes(pmt.u8vector_elements(pmt.cdr(msg_pmt))))} ")
+            #with self.transceiver.lock:
+            self.transceiver.framequeue.append(
                     {"Dest":[self.transceiver.dest_addr,
                             self.transceiver.dest_ssid],
                             "Type":'I',
@@ -69,6 +71,13 @@ class ax25_testing_input_only(gr.basic_block):
                             "Payload": bytes(pmt.u8vector_elements(pmt.cdr(msg_pmt))),
                             "Com":'COM'} #TODO: Looak at Payload handling, this might be a vector
                     )
+            
+            print(f"[TEST]framequeue length: {len(self.transceiver.framequeue)}")
+            # 手动发布测试
+            #test_pmt = pmt.cons(pmt.PMT_NIL, pmt.init_u8vector(len(bytes(pmt.u8vector_elements(pmt.cdr(msg_pmt)))), list(bytes(pmt.u8vector_elements(pmt.cdr(msg_pmt))))))
+            #self.message_port_pub(pmt.intern('Frame out'), test_pmt)
+            
+            
         except ValueError as e: 
             self.transceiver.logger.debug(e)
         except Exception as e:

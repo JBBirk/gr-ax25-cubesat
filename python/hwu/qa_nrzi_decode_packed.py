@@ -20,7 +20,7 @@ class qa_nrzi_decode_packed(gr_unittest.TestCase):
 
     def test_instance(self):
         # FIXME: Test will fail until you pass sensible arguments to the constructor
-        instance = nrzi_decode_packed()
+        instance = nrzi_decode_packed.nrzi_decode_packed()
 
     def test_001_descriptive_test_name(self):
         # set up fg

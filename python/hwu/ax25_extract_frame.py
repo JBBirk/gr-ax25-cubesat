@@ -30,7 +30,7 @@ import numpy
 import pmt
 from gnuradio import gr
 
-class ax25_extract_frame_v2(gr.sync_block):
+class ax25_extract_frame(gr.sync_block):
     """
     docstring for block extract_frame
     """
@@ -117,5 +117,7 @@ class ax25_extract_frame_v2(gr.sync_block):
         self.frame_buffer = []
         # self.active_frame = False
         self.ones = 0
+    
+
     
 

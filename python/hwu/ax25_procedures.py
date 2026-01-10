@@ -76,8 +76,10 @@ class ax25_procedures(gr.basic_block):
 
 
     def handle_payload_in(self, msg_pmt):
-        # print("Payload received: ", msg_pmt)
+        print("Received payload: ", pmt.u8vector_elements(pmt.cdr(msg_pmt)))
         try:
+            payload_bytes = bytes(pmt.u8vector_elements(pmt.cdr(msg_pmt)))  # 提取Payload字节
+            print(f"===== The message has been published to the Frame out port,length：{len(payload_bytes)} =====")
             with self.transceiver.lock:
                 self.transceiver.framequeue.append(
                     {"Dest":[self.transceiver.dest_addr,

@@ -29,6 +29,8 @@ gr_python_install(FILES __init__.py
     # debug_add_ax25_header.py
     ax25_extract_frame.py
     physical_header_barker_code.py
+    nrzi_decode_packed.py
+    nrzi_encode_packed.py
     ax25_testing_input_only.py DESTINATION ${GR_PYTHON_DIR}/gnuradio/hwu)
 
 ########################################################################
