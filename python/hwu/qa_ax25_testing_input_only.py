@@ -59,7 +59,7 @@ class qa_ax25_testing_input_only(gr_unittest.TestCase):
             transceiver.frame_backlog[3] = {"Dest":[transceiver.dest_addr, transceiver.dest_ssid],
                                 "Type":'I', "Poll":False, "Payload": b'frame3', "Com":'COM', "Ns":3}
 
-        #构造recovery_frame，触发SREJ
+       
         recovery_frame = {
             "Type":'RECOVERY',
             "Poll":False,
@@ -80,7 +80,6 @@ class qa_ax25_testing_input_only(gr_unittest.TestCase):
         except Exception as e:
             print(f"[SREJ]触发SREJ异常：{e}")
 
-        #构造SREJ帧，触发重传 + 模拟重传成功
         srej_frame = {
             "Type":'SREJ',
             "Nr":2,

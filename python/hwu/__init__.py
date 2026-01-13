@@ -21,9 +21,9 @@ except ModuleNotFoundError:
 
 # import any pure python here
 
-from .ax25_procedures import ax25_procedures # AX.25流程控制核心
-from .ax25_extract_frame import ax25_extract_frame # 帧提取辅助块
-from .physical_header_barker_code import physical_header_barker_code # 物理层辅助块
-from .ax25_testing_input_only import ax25_testing_input_only  # 测试输入+参数配置
+from .ax25_procedures import ax25_procedures 
+from .ax25_extract_frame import ax25_extract_frame 
+from .physical_header_barker_code import physical_header_barker_code 
+from .ax25_testing_input_only import ax25_testing_input_only  
  
 
