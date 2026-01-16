@@ -60,7 +60,7 @@ class Uplinker:
                 self.transceiver.lock.release()
 
                 # Check whether receive window would be exceeded 
-                if request["Type"] == 'I' and self.transceiver.get_state_variable('vs')== (self.transceiver.get_state_variable('va') + self.transceiver.receive_window_k)%self.transceiver.modulo: #TODO Check if this interferes with recovery by blocking frames fomr sending
+                if request["Type"] == 'I' and self.transceiver.get_state_variable('vs') == (self.transceiver.get_state_variable('va') + self.transceiver.receive_window_k)%self.transceiver.modulo: #TODO Check if this interferes with recovery by blocking frames fomr sending
                     with self.transceiver.lock:
                         self.transceiver.framequeue.insert(0, request)
                     self.transceiver.logger.debug(f"Remote receive window full, waiting for clear. Acked: {self.transceiver.get_state_variable('va')}, Sent: {self.transceiver.get_state_variable('vs')}") # Framequeue at {len(self.transceiver.framequeue)}")
@@ -100,10 +100,9 @@ class Uplinker:
 
     def send(self, frame:bs.BitArray):
 
-        byte_vector = [byte for byte in frame.tobytes()] #this does add 0 bits to the end as padding, should be removed later in flowgraph. ALthough not strictly necessary
+        byte_vector = [byte for byte in frame.tobytes()] #this does add 0 bits to the end as padding, should be removed later in flowgraph. Although not strictly necessary
         try:  
             self.transceiver.gr_block.message_port_pub(pmt.intern('Frame out'), pmt.cons(pmt.PMT_NIL, pmt.init_u8vector(len(byte_vector), byte_vector)))
-            # self.transceiver.logger.debug(f"Successfully pushed frame: {pmt.cons(pmt.PMT_NIL, pmt.init_u8vector(len(byte_vector), byte_vector))}")
         except Exception as e:
             self.transceiver.logger.warning(f"exception occured when trying to send frame: {e}")
 
@@ -147,7 +146,7 @@ class Downlinker:
     """ Downlinker Main Run loop"""
     def _run(self) -> None:
 
-        # testing_num_frames = 0
+
 
         while not self._kill.isSet():
             self.transceiver.lock.acquire()
@@ -193,7 +192,6 @@ class Downlinker:
 
         byte_vec = [byte for byte in data["Pid-Data"][8:].tobytes()]
 
-        # self.transceiver.logger.debug("Answering to message")
         try:
             self.transceiver.logger.debug(f"Successfully received Data: {byte_vec}")
             self.transceiver.gr_block.message_port_pub(pmt.intern("Payload out"), pmt.cons(pmt.PMT_NIL, pmt.init_u8vector(len(byte_vec), byte_vec)))
@@ -208,11 +206,10 @@ class Downlinker:
 
         # Check if all lost frames have been recovered
         if self.transceiver.get_rej_active() and data["Ns"] == self.transceiver.get_ns_before_seqbreak()-1 and self.transceiver.rej == "REJ":
-            # self.transceiver.rej_active = 0
             self.transceiver.set_rej_active(0)
             self.transceiver.logger.debug("REJ Recovery finished, all missing frames received")
 
-            # Add supervisory frame response if needed (No I-frames in frame queue, remote receive window full)
+        # Add supervisory frame response if needed (No I-frames in frame queue, remote receive window full)
         if not self.transceiver.framequeue or self.transceiver.get_state_variable('vs') == (self.transceiver.get_state_variable('va') + self.transceiver.receive_window_k)%self.transceiver.modulo:
             busy_state = self.transceiver.get_state() == 'BUSY'
             with self.transceiver.lock:
@@ -321,8 +318,6 @@ class Downlinker:
     
     def __RNR_frame_handler(self, data): #TODO T3 start/stop
 
-        # with self.transceiver.lock:
-
         self.transceiver.set_remote_busy(True)
 
         self.__acknowledgement_handler(data)                           
@@ -360,7 +355,6 @@ class Downlinker:
 
     def __acknowledgement_handler(self, data):
 
-        # with self.transceiver.lock:
         if data["Nr"] == self.transceiver.get_state_variable("va"): return # No new frames have been acknolwedged, nothin to do
                 
         if data["Nr"] == self.transceiver.get_state_variable("vs"): #All sent frames are acknowledged, stop timer t1

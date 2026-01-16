@@ -19,8 +19,6 @@ class Timers:
         self.timers = {}
         self._kill = threading.Event()
         self._lock = threading.Lock()
-        # self.timer_active_t1 = False
-        # self.timer_active_t3 = False
 
     def start(self) -> None:
 
@@ -41,42 +39,10 @@ class Timers:
     """ Thread loop that starts timers T1 and T3, then idles """
     def _run(self):
 
-        # self.transceiver.logger.debug("Setting up daughter threads")
         self.setup_event_threads()
 
-        # self.transceiver.logger.debug("Entering run loop")
         while not self._kill.is_set():
             self._kill.wait(timeout=1)
-
-
-        
-        # self.local_timer_t1 = None
-        # self.local_timer_t3 = None
-
-        # self.setup_timers()
-
-        # # for event in [self.timer_cancel_t1, self.timer_reset_t1, self.timer_cancel_t3, self.timer_reset_t3]:
-        # threading.Thread(target=self.wait_for_event, args=[self.timer_cancel_t1, ], daemon=True).start()
-    
-        # while not self._kill.is_set():
-        #     if self.timer_reset_t1.wait(timeout=0.1) or self.timer_reset_t3.wait(timeout=0.1) or self.timer_cancel_t1.wait(timeout=0.1) or self.timer_cancel_t3.wait(timeout=0.1): # Wait for any of the timers to reset, check for kill every 100ms
-
-        #         if self.timer_reset_t1.is_set(): #T1 timer reset
-        #             if self.local_timer_t1:
-        #                 self.local_timer_t1.cancel()
-        #             self.local_timer_t1 = threading.Timer(self.timer_t1_seconds, self.t1_timeout_handler)
-        #             self.local_timer_t1.start()
-        #             self.timer_active_t1 = True
-        #             self.timer_reset_t1.clear()
-        
-        #         if self.timer_reset_t3.is_set(): #T3 timer reset
-        #             if self.local_timer_t3:
-        #                 self.local_timer_t3.cancel()
-        #             self.local_timer_t3 = threading.Timer(self.timer_t3_seconds, self.t3_timeout_handler)
-        #             self.local_timer_t3.start()
-        #             self.timer_active_t3 = True
-        #             self.timer_reset_t3.clear()
-
 
     """ 
     Timer T1 Timeout means singular lost I frame, that is not caught by sequence error 
@@ -115,7 +81,6 @@ class Timers:
 
     def setup_event_threads(self):
 
-        # self.transceiver.logger.debug("Inside thread setup function")
         for name, event in self.events.items():
             threading.Thread(target=self.wait_for_event,
             args=[event, 

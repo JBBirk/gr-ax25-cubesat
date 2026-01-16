@@ -25,11 +25,8 @@ class ax25_testing_input_only(gr.basic_block):
                 information_field_length=2048, 
                 receive_window_k=7, 
                 ack_timer=3, 
-                retries=10, 
-                #pid=bs.Bits(hex='0xF0'), 
-                tcp_isServer=False):
+                retries=10):
         
-
         gr.basic_block.__init__(self,
             name="AX25_main_procedures_block",
             in_sig=None,
@@ -56,9 +53,10 @@ class ax25_testing_input_only(gr.basic_block):
         self.transceiver.uplinker.start()
         self.transceiver.downlinker.start()
         self.transceiver.timers.start()
+        self.transceiver.logger.debug("AX25 Testing Input Only block initialized")
 
     def handle_payload_in(self, msg_pmt):
-        # print("Payload received: ", msg_pmt)
+        self.transceiver.logger.debug("Payload received")
         try:
             with self.transceiver.lock:
                 self.transceiver.framequeue.append(

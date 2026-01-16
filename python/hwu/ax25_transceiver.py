@@ -25,7 +25,6 @@ import bitstring as bs
 import threading
 import socket
 import logging
-import time
 
 from .ax25_framer import Framer
 from .ax25_constants import PID
@@ -84,7 +83,6 @@ class Transceiver:
         self.timer_cancel_t3 = threading.Event()
         self.t1_try_count = 0
         self.t3_try_count = 0
-        # self.tcp_isServer = tcp_isServer
 
         """ Setup internal links to other classes"""
         self.framer = Framer(self)
@@ -122,7 +120,6 @@ class Transceiver:
         self.logger = logging.getLogger(f"{__name__}.{self.src_addr}")
         self.logger.setLevel(logging.DEBUG)
 
-        # if not self.logger.hasHandlers():
         self.fh = logging.FileHandler(f'ax25_{self.src_addr}.log', mode='w')
         self.fh.setLevel(logging.DEBUG)
         self.logger.addHandler(self.fh)

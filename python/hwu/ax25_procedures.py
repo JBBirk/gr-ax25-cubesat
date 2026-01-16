@@ -76,7 +76,6 @@ class ax25_procedures(gr.basic_block):
 
 
     def handle_payload_in(self, msg_pmt):
-        # print("Payload received: ", msg_pmt)
         try:
             with self.transceiver.lock:
                 self.transceiver.framequeue.append(
@@ -85,7 +84,7 @@ class ax25_procedures(gr.basic_block):
                             "Type":'I',
                             "Poll":False,
                             "Payload": bytes(pmt.u8vector_elements(pmt.cdr(msg_pmt))),
-                            "Com":'COM'} #TODO: Looak at Payload handling, this might be a vector
+                            "Com":'COM'}
                     )
         except ValueError as e: 
             self.transceiver.logger.debug(e)
@@ -93,7 +92,6 @@ class ax25_procedures(gr.basic_block):
             self.transceiver.logger.debug(e)
 
     def handle_frame_in(self, msg_pmt):
-        # print("Frame received: ",pmt.u8vector_elements(pmt.cdr(msg_pmt)))
         try:
             with self.transceiver.lock:
                 self.transceiver.frame_input_queue.append(msg_pmt)
